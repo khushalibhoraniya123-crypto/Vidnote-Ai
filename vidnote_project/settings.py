@@ -158,10 +158,14 @@ MEDIA_URL = '/media/'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Authentication Settings
+# Authentication & Session Settings
 LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'videos:dashboard'
 LOGOUT_REDIRECT_URL = 'accounts:login'
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = not DEBUG
+
 
 
 # Bootstrap Message Tags Mapping
