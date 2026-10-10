@@ -9,7 +9,7 @@
       }
     },
     {
-      "src": "vidnote_project/wsgi.py",
+      "src": "api/index.py",
       "use": "@vercel/python"
     }
   ],
@@ -20,7 +20,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "vidnote_project/wsgi.py"
+      "dest": "api/index.py"
     }
   ]
 }
