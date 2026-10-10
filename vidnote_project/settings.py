@@ -91,17 +91,17 @@ WSGI_APPLICATION = 'vidnote_project.wsgi.application'
 
 # Database & Media paths
 if IS_VERCEL:
-    DB_PATH = Path('/tmp') / 'db.sqlite3'
-    MEDIA_ROOT = Path('/tmp') / 'media'
+    DB_PATH = str(Path('/tmp') / 'db.sqlite3')
+    MEDIA_ROOT = str(Path('/tmp') / 'media')
     CHROMA_PERSIST_DIRECTORY = str(Path('/tmp') / 'media' / 'chroma_db')
     try:
-        os.makedirs(str(MEDIA_ROOT), exist_ok=True)
-        os.makedirs(str(CHROMA_PERSIST_DIRECTORY), exist_ok=True)
+        os.makedirs(MEDIA_ROOT, exist_ok=True)
+        os.makedirs(CHROMA_PERSIST_DIRECTORY, exist_ok=True)
     except Exception:
         pass
 else:
-    DB_PATH = BASE_DIR / 'db.sqlite3'
-    MEDIA_ROOT = BASE_DIR / 'media'
+    DB_PATH = str(BASE_DIR / 'db.sqlite3')
+    MEDIA_ROOT = str(BASE_DIR / 'media')
     CHROMA_PERSIST_DIRECTORY = os.path.join(MEDIA_ROOT, 'chroma_db')
 
 DATABASES = {
@@ -148,8 +148,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [str(BASE_DIR / 'static')]
+STATIC_ROOT = str(BASE_DIR / 'staticfiles')
 
 STORAGES = {
     "default": {
