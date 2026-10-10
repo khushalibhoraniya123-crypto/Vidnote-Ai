@@ -10,22 +10,6 @@ import os
 import logging
 from typing import Optional
 from django.utils.html import escape
-from reportlab.lib.pagesizes import letter
-from reportlab.lib import colors
-from reportlab.lib.units import inch
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import (
-    SimpleDocTemplate,
-    Paragraph,
-    Spacer,
-    Table,
-    TableStyle,
-    KeepTogether,
-    HRFlowable,
-    ListFlowable,
-    ListItem
-)
-from reportlab.pdfgen import canvas
 from videos.models import Video, Summary, ImportantMoment, ActionItem, TranscriptSegment
 
 logger = logging.getLogger(__name__)
@@ -36,10 +20,32 @@ class PDFGenerationError(Exception):
     pass
 
 
-class NumberedCanvas(canvas.Canvas):
+
+try:
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import (
+        SimpleDocTemplate,
+        Paragraph,
+        Spacer,
+        Table,
+        TableStyle,
+        HRFlowable
+    )
+    from reportlab.pdfgen import canvas
+    REPORTLAB_AVAILABLE = True
+    CanvasBase = canvas.Canvas
+except Exception:
+    REPORTLAB_AVAILABLE = False
+    CanvasBase = object
+
+
+class NumberedCanvas(CanvasBase):
     """
     Two-pass canvas that adds running headers and 'Page X of Y' footers across all pages.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._saved_page_states = []
@@ -220,11 +226,10 @@ def get_report_styles():
 def generate_video_pdf_report(video_instance: Video, include_transcript: bool = True) -> io.BytesIO:
     """
     Generate an executive PDF report for the given Video model instance.
-    Includes title, metadata, summaries, key points, timestamps, action items, and optional transcript.
-    
-    Returns:
-        io.BytesIO buffer containing binary PDF data.
     """
+    if not REPORTLAB_AVAILABLE:
+        raise PDFGenerationError("ReportLab PDF engine is not installed or available.")
+
     try:
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(
