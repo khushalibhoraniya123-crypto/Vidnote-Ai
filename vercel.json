@@ -3,11 +3,7 @@
   "builds": [
     {
       "src": "vidnote_project/wsgi.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "15mb",
-        "runtime": "python3.12"
-      }
+      "use": "@vercel/python"
     },
     {
       "src": "build_files.sh",
@@ -28,3 +24,4 @@
     }
   ]
 }
+
