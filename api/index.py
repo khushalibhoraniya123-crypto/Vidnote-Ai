@@ -2,7 +2,7 @@ import os
 import sys
 from pathlib import Path
 
-# Ensure project root is in sys.path
+# Add workspace directory to Python path
 BASE_DIR = Path(__file__).resolve().parent.parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
@@ -13,12 +13,16 @@ try:
     from django.core.wsgi import get_wsgi_application
     application = get_wsgi_application()
     app = application
-except Exception:
+except BaseException as exc:
     import traceback
     err_trace = traceback.format_exc()
+    print(f"[FATAL DJANGO STARTUP ERROR] {err_trace}", file=sys.stderr)
 
     def app(environ, start_response):
         status = '500 Internal Server Error'
-        headers = [('Content-type', 'text/plain; charset=utf-8')]
+        headers = [('Content-Type', 'text/plain; charset=utf-8')]
         start_response(status, headers)
-        return [f"Django startup error on Vercel:\n\n{err_trace}".encode('utf-8')]
+        return [f"Django Startup Error on Vercel:\n\n{err_trace}".encode('utf-8')]
+
+# Expose handler for BaseHTTPRequestHandler compatibility
+handler = app
