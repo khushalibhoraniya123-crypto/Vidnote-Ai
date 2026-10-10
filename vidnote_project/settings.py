@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
     # Local Apps
     'core',
@@ -90,11 +89,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'vidnote_project.wsgi.application'
 
 
-# Database
+# Database & Media paths
 if IS_VERCEL:
     DB_PATH = Path('/tmp') / 'db.sqlite3'
     MEDIA_ROOT = Path('/tmp') / 'media'
     CHROMA_PERSIST_DIRECTORY = str(Path('/tmp') / 'media' / 'chroma_db')
+    try:
+        os.makedirs(str(MEDIA_ROOT), exist_ok=True)
+        os.makedirs(str(CHROMA_PERSIST_DIRECTORY), exist_ok=True)
+    except Exception:
+        pass
 else:
     DB_PATH = BASE_DIR / 'db.sqlite3'
     MEDIA_ROOT = BASE_DIR / 'media'
@@ -106,6 +110,7 @@ DATABASES = {
         'NAME': DB_PATH,
     }
 }
+
 
 
 # Password validation
