@@ -11,8 +11,19 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vidnote_project.settings')
 
 from django.core.wsgi import get_wsgi_application
 
-application = get_wsgi_application()
-app = application
-handler = application
+django_app = get_wsgi_application()
 
+def app(environ, start_response):
+    # Normalize PATH_INFO to counteract Vercel internal rewrite destination distortion
+    path = environ.get('PATH_INFO', '')
+    if path.startswith('/api/index.py'):
+        environ['PATH_INFO'] = path[len('/api/index.py'):] or '/'
+    elif path.startswith('/api/index'):
+        environ['PATH_INFO'] = path[len('/api/index'):] or '/'
+    elif path.startswith('/api'):
+        environ['PATH_INFO'] = path[len('/api'):] or '/'
+    
+    return django_app(environ, start_response)
 
+application = app
+handler = app
