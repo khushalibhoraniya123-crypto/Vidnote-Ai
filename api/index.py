@@ -9,11 +9,10 @@ if str(BASE_DIR) not in sys.path:
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vidnote_project.settings')
 
-try:
-    from django.core.wsgi import get_wsgi_application
-    app = get_wsgi_application()
-except Exception as e:
-    import traceback
-    print("DJANGO WSGI INITIALIZATION FAILED:", traceback.format_exc(), file=sys.stderr)
-    raise
+from django.core.wsgi import get_wsgi_application
+
+application = get_wsgi_application()
+app = application
+handler = application
+
 
