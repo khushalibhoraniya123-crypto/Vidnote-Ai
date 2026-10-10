@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block title %}Register | VidNote AI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4">
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 56px; height: 56px;">
+                            <i class="bi bi-person-plus-fill fs-3"></i>
+                        </div>
+                        <h3 class="fw-bold mb-1">Create Account</h3>
+                        <p class="text-muted small">Join VidNote AI to summarize and interact with your videos</p>
+                    </div>
+
+                    <form method="POST" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger py-2 small">
+                                {% for error in form.non_field_errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold" for="{{ form.username.id_for_label }}">Username *</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-person text-muted"></i></span>
+                                {{ form.username }}
+                            </div>
+                            {% if form.username.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.username.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text small text-muted">Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.</div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold" for="{{ form.first_name.id_for_label }}">First Name</label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.first_name.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label small fw-semibold" for="{{ form.last_name.id_for_label }}">Last Name</label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.last_name.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold" for="{{ form.email.id_for_label }}">Email Address *</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope text-muted"></i></span>
+                                {{ form.email }}
+                            </div>
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.email.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold" for="{{ form.password1.id_for_label }}">Password *</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock text-muted"></i></span>
+                                {{ form.password1 }}
+                            </div>
+                            {% if form.password1.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.password1.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text small text-muted">Password must be at least 8 characters.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-semibold" for="{{ form.password2.id_for_label }}">Confirm Password *</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-shield-lock text-muted"></i></span>
+                                {{ form.password2 }}
+                            </div>
+                            {% if form.password2.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.password2.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm">
+                                <i class="bi bi-person-check-fill me-2"></i>Register
+                            </button>
+                        </div>
+
+                        <div class="text-center text-muted small">
+                            Already have an account? 
+                            <a href="{% url 'accounts:login' %}" class="text-primary fw-semibold text-decoration-none">Log In</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

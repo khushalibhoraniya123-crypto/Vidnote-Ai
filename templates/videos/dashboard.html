@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+
+{% block title %}My Videos Workspace | VidNote AI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header with Quick Upload Button -->
+    <div class="row align-items-center mb-4 g-3">
+        <div class="col-md-7">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 fw-semibold">
+                    <i class="bi bi-person-badge me-1"></i> {{ user.username }}'s Workspace
+                </span>
+            </div>
+            <h2 class="fw-bold mb-1">My Video Workspace</h2>
+            <p class="text-muted mb-0">Manage your lecture videos, AI summaries, key moments, action items, and RAG chatbots.</p>
+        </div>
+        <div class="col-md-5 text-md-end d-flex justify-content-md-end gap-2">
+            <a href="{% url 'videos:upload' %}" class="btn btn-primary btn-lg rounded-pill px-4 shadow-sm fw-bold">
+                <i class="bi bi-cloud-arrow-up-fill me-2"></i> Upload Video
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Total Videos -->
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 feature-card">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-3 p-3 me-3 flex-shrink-0">
+                        <i class="bi bi-film fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold">Total Videos</div>
+                        <h3 class="fw-bold mb-0 text-dark">{{ stats.total }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Processing Videos -->
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 feature-card">
+                <div class="d-flex align-items-center">
+                    <div class="bg-warning bg-opacity-10 text-warning rounded-3 p-3 me-3 flex-shrink-0">
+                        <i class="bi bi-cpu fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold">Processing</div>
+                        <h3 class="fw-bold mb-0 text-dark">{{ stats.processing }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Completed Videos -->
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 feature-card">
+                <div class="d-flex align-items-center">
+                    <div class="bg-success bg-opacity-10 text-success rounded-3 p-3 me-3 flex-shrink-0">
+                        <i class="bi bi-check2-circle fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold">Completed</div>
+                        <h3 class="fw-bold mb-0 text-dark">{{ stats.completed }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Uploaded / Queued -->
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100 feature-card">
+                <div class="d-flex align-items-center">
+                    <div class="bg-info bg-opacity-10 text-info rounded-3 p-3 me-3 flex-shrink-0">
+                        <i class="bi bi-arrow-repeat fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold">Uploaded / In Queue</div>
+                        <h3 class="fw-bold mb-0 text-dark">{{ stats.uploaded }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter Controls -->
+    {% if videos %}
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-4">
+            <div class="row g-2 align-items-center">
+                <!-- Search Box -->
+                <div class="col-md-6 col-lg-7">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-0 text-muted ps-3">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" id="videoSearchInput" class="form-control bg-light border-0 py-2" placeholder="Search videos by title or description..." oninput="filterVideos()">
+                    </div>
+                </div>
+                <!-- Status Filter Pills -->
+                <div class="col-md-6 col-lg-5 text-md-end">
+                    <div class="btn-group btn-group-sm w-100 w-md-auto" role="group" aria-label="Filter status">
+                        <button type="button" class="btn btn-primary fw-semibold filter-btn active" data-filter="all" onclick="setFilter('all', this)">All ({{ stats.total }})</button>
+                        <button type="button" class="btn btn-outline-secondary fw-semibold filter-btn" data-filter="completed" onclick="setFilter('completed', this)">Completed ({{ stats.completed }})</button>
+                        <button type="button" class="btn btn-outline-secondary fw-semibold filter-btn" data-filter="processing" onclick="setFilter('processing', this)">Processing ({{ stats.processing }})</button>
+                        <button type="button" class="btn btn-outline-secondary fw-semibold filter-btn" data-filter="uploaded" onclick="setFilter('uploaded', this)">Uploaded ({{ stats.uploaded }})</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Cards Grid -->
+        <div class="row g-4" id="videoGrid">
+            {% for video in videos %}
+                <div class="col-md-6 col-lg-4 video-item" data-status="{{ video.status }}" data-title="{{ video.title|lower }}" data-desc="{{ video.description|default:''|lower }}">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden feature-card bg-white position-relative">
+                        <div class="card-body p-4 d-flex flex-column">
+                            <!-- Top Status & Date -->
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge {{ video.status_badge_class }} rounded-pill px-3 py-1">
+                                    <i class="bi bi-dot"></i> {{ video.get_status_display }}
+                                </span>
+                                <small class="text-muted"><i class="bi bi-calendar3 me-1"></i>{{ video.created_at|date:"M d, Y" }}</small>
+                            </div>
+
+                            <!-- Title -->
+                            <h5 class="card-title fw-bold text-dark mt-2 mb-2 text-truncate" title="{{ video.title }}">
+                                {{ video.title }}
+                            </h5>
+
+                            <!-- Description -->
+                            {% if video.description %}
+                                <p class="card-text text-muted small mb-3 flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                    {{ video.description }}
+                                </p>
+                            {% else %}
+                                <p class="card-text text-muted small mb-3 fst-italic flex-grow-1">No description provided.</p>
+                            {% endif %}
+
+                            <!-- Video Metadata & Actions -->
+                            <div class="border-top pt-3 mt-auto">
+                                <div class="d-flex justify-content-between align-items-center text-muted small mb-3">
+                                    <span><i class="bi bi-hdd me-1"></i>{{ video.formatted_file_size }}</span>
+                                    <span><i class="bi bi-clock me-1"></i>{{ video.formatted_duration }}</span>
+                                </div>
+
+                                <!-- Primary Action Buttons -->
+                                <div class="d-flex gap-2 mb-2">
+                                    <a href="{% url 'videos:detail' video.pk %}" class="btn btn-primary btn-sm rounded-pill px-3 flex-grow-1 fw-semibold">
+                                        <i class="bi bi-play-fill me-1"></i> View Video & Player
+                                    </a>
+                                    <a href="{% url 'videos:delete' video.pk %}" class="btn btn-outline-danger btn-sm rounded-pill px-2" title="Delete Video">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+
+                                <!-- Secondary Capability Shortcuts -->
+                                <div class="d-flex flex-wrap gap-1 pt-1">
+                                    <a href="{% url 'videos:summary' video.pk %}" class="btn btn-light btn-sm text-dark rounded-pill px-2 py-1 small flex-grow-1" title="AI Summary & Notes">
+                                        <i class="bi bi-stars text-primary me-1"></i> Summary
+                                    </a>
+                                    <a href="{% url 'videos:action_items' video.pk %}" class="btn btn-light btn-sm text-dark rounded-pill px-2 py-1 small flex-grow-1" title="Action Items">
+                                        <i class="bi bi-check2-square text-success me-1"></i> Tasks
+                                    </a>
+                                    <a href="{% url 'rag:video_chat' video.pk %}" class="btn btn-light btn-sm text-dark rounded-pill px-2 py-1 small flex-grow-1" title="AI Chatbot (RAG)">
+                                        <i class="bi bi-chat-dots text-info me-1"></i> AI Chat
+                                    </a>
+                                    <a href="{% url 'videos:download_pdf' video.pk %}" class="btn btn-light btn-sm text-dark rounded-pill px-2 py-1 small flex-grow-1" title="PDF Report">
+                                        <i class="bi bi-file-earmark-pdf text-danger me-1"></i> PDF
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- No Filter Results State (Hidden by default) -->
+        <div id="noFilterResults" class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4 d-none">
+            <div class="bg-light d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-3" style="width: 70px; height: 70px;">
+                <i class="bi bi-search text-muted fs-2"></i>
+            </div>
+            <h5 class="fw-bold mb-1">No matching videos found</h5>
+            <p class="text-muted small mb-0">Try changing your search query or filter criteria.</p>
+        </div>
+
+    {% else %}
+        <!-- Empty State -->
+        <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white my-4">
+            <div class="bg-light d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-3" style="width: 80px; height: 80px;">
+                <i class="bi bi-camera-video text-muted fs-1"></i>
+            </div>
+            <h4 class="fw-bold mb-2">No Videos Uploaded Yet</h4>
+            <p class="text-muted mx-auto mb-4" style="max-width: 500px;">
+                You haven't uploaded any videos yet. Upload your first lecture or study video to generate AI summaries, action items, important timestamps, and RAG chatbots.
+            </p>
+            <div>
+                <a href="{% url 'videos:upload' %}" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold shadow-sm">
+                    <i class="bi bi-cloud-arrow-up-fill me-2"></i> Upload Your First Video
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Instant Client-Side Filter & Search Script -->
+<script>
+    let currentStatusFilter = 'all';
+
+    function setFilter(status, btnElement) {
+        currentStatusFilter = status;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('btn-primary', 'active');
+            btn.classList.add('btn-outline-secondary');
+        });
+        btnElement.classList.remove('btn-outline-secondary');
+        btnElement.classList.add('btn-primary', 'active');
+        filterVideos();
+    }
+
+    function filterVideos() {
+        const query = (document.getElementById('videoSearchInput')?.value || '').trim().toLowerCase();
+        const items = document.querySelectorAll('.video-item');
+        let visibleCount = 0;
+
+        items.forEach(item => {
+            const status = item.getAttribute('data-status') || '';
+            const title = item.getAttribute('data-title') || '';
+            const desc = item.getAttribute('data-desc') || '';
+
+            const matchesStatus = (currentStatusFilter === 'all') || (status === currentStatusFilter);
+            const matchesQuery = !query || title.includes(query) || desc.includes(query);
+
+            if (matchesStatus && matchesQuery) {
+                item.classList.remove('d-none');
+                visibleCount++;
+            } else {
+                item.classList.add('d-none');
+            }
+        });
+
+        const noResults = document.getElementById('noFilterResults');
+        if (noResults) {
+            if (visibleCount === 0 && items.length > 0) {
+                noResults.classList.remove('d-none');
+            } else {
+                noResults.classList.add('d-none');
+            }
+        }
+    }
+</script>
+{% endblock %}

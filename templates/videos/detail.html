@@ -1,0 +1,599 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ video.title }} | VidNote AI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'videos:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item active text-truncate" aria-current="page" style="max-width: 300px;">{{ video.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+        <!-- Left Column: Video Player, Important Moments, AI Summary, Transcripts -->
+        <div class="col-lg-8">
+            <!-- 1. Video Player Card -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
+                <div class="ratio ratio-16x9 bg-black">
+                    <video id="videoPlayer" controls preload="metadata" class="w-100 h-100">
+                        {% if video.video_file %}
+                            <source src="{{ video.video_file.url }}" type="video/mp4">
+                            <source src="{{ video.video_file.url }}" type="video/webm">
+                        {% endif %}
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+
+
+                <div class="card-body p-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge {{ video.status_badge_class }} rounded-pill px-3 py-2 fs-6">
+                                <i class="bi bi-info-circle me-1"></i> Status: {{ video.get_status_display }}
+                            </span>
+                            {% if video.language %}
+                                <span class="badge bg-light text-dark border rounded-pill px-3 py-2">
+                                    <i class="bi bi-translate me-1"></i> Lang: {{ video.language|upper }}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'videos:download_pdf' video.pk %}" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm fw-semibold">
+                                <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download PDF Report
+                            </a>
+                            <a href="{% url 'videos:delete' video.pk %}" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                                <i class="bi bi-trash me-1"></i> Delete
+                            </a>
+                        </div>
+                    </div>
+
+                    <h3 class="fw-bold mb-3">{{ video.title }}</h3>
+
+                    {% if video.description %}
+                        <div class="p-3 bg-light rounded-3 mb-2">
+                            <h6 class="fw-bold text-secondary mb-2"><i class="bi bi-card-text me-1"></i> Description</h6>
+                            <p class="text-muted mb-0 small">{{ video.description|linebreaks }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 2. AI-Detected Important Timestamps & Key Moments -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-warning bg-opacity-10 text-warning rounded-3 p-2 me-2">
+                            <i class="bi bi-pin-angle-fill fs-4 text-warning"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0">Important Moments & Timestamps</h5>
+                            <small class="text-muted">Key lecture milestones & concept markers &bull; {{ moments_count }} Highlights</small>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{% url 'videos:detect_moments' video.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-warning text-dark border rounded-pill px-3 fw-semibold shadow-sm">
+                            <i class="bi bi-arrow-repeat me-1"></i> {% if has_moments %}Re-Detect Moments{% else %}Detect Key Moments{% endif %}
+                        </button>
+                    </form>
+                </div>
+
+                <hr class="opacity-25 my-2">
+
+                {% if has_moments %}
+                    <div class="row g-3 pt-2">
+                        {% for moment in important_moments %}
+                            <div class="col-md-6">
+                                <div class="card h-100 border rounded-4 p-3 bg-light moment-card position-relative transition-all">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <span class="badge {{ moment.importance_badge_class }} rounded-pill px-2 py-1 small">
+                                            {{ moment.get_importance_display }} Priority
+                                        </span>
+                                        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 shadow-sm fw-semibold jump-timestamp-btn" onclick="seekVideo({{ moment.start_time }})" title="Jump to {{ moment.formatted_start_time }}">
+                                            <i class="bi bi-play-circle-fill me-1"></i> Jump to Timestamp ({{ moment.formatted_start_time }})
+                                        </button>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">{{ moment.title }}</h6>
+                                    <p class="text-muted small mb-0">{{ moment.description }}</p>
+                                    {% if moment.end_time %}
+                                        <div class="mt-2 text-muted small">
+                                            <i class="bi bi-clock me-1"></i> Interval: {{ moment.formatted_time_range }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-3 bg-light rounded-3 text-center">
+                        <p class="text-muted small mb-2">No key moments detected yet.</p>
+                        <form method="POST" action="{% url 'videos:detect_moments' video.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning btn-sm rounded-pill px-4 fw-bold">
+                                <i class="bi bi-magic me-1"></i> Identify Key Timestamps
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- 3. AI-Detected Action Items & Deliverables Preview Card -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4 border-start border-success border-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-success bg-opacity-10 text-success rounded-3 p-2 me-2">
+                            <i class="bi bi-check2-square fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0">Action Items & Deliverables</h5>
+                            <small class="text-muted">Detected Tasks & Commitments &bull; {{ action_items_count }} Total ({{ pending_action_items_count }} Pending)</small>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                        {% if has_action_items %}
+                            <a href="{% url 'videos:action_items' video.pk %}" class="btn btn-success btn-sm rounded-pill px-3 fw-semibold shadow-sm">
+                                <i class="bi bi-card-checklist me-1"></i> Manage Tasks ({{ action_items_count }})
+                            </a>
+                        {% endif %}
+                        <form method="POST" action="{% url 'videos:extract_action_items' video.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-success border rounded-pill px-3 fw-semibold shadow-sm">
+                                <i class="bi bi-arrow-repeat me-1"></i> {% if has_action_items %}Re-Extract{% else %}Extract Tasks{% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <hr class="opacity-25 my-2">
+
+                {% if has_action_items %}
+                    <div class="list-group list-group-flush pt-1">
+                        {% for item in action_items|slice:":4" %}
+                            <div class="list-group-item px-0 py-2 border-0 d-flex justify-content-between align-items-start gap-3">
+                                <div class="d-flex align-items-start gap-2">
+                                    <form method="POST" action="{% url 'videos:toggle_action_item_status' video.pk item.pk %}" class="mt-1">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <button type="submit" class="btn p-0 border-0" title="Toggle completion">
+                                            {% if item.is_completed %}
+                                                <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                            {% else %}
+                                                <i class="bi bi-circle text-secondary fs-5 hover-text-primary"></i>
+                                            {% endif %}
+                                        </button>
+                                    </form>
+                                    <div>
+                                        <h6 class="mb-0 fw-semibold {% if item.is_completed %}text-decoration-line-through text-muted{% else %}text-dark{% endif %}">
+                                            {{ item.task }}
+                                        </h6>
+                                        {% if item.description %}
+                                            <p class="text-muted small mb-1">{{ item.description|truncatewords:15 }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                    <span class="badge {{ item.priority_badge_class }} rounded-pill px-2 py-1 small">
+                                        {{ item.get_priority_display }}
+                                    </span>
+                                    {% if item.timestamp is not None %}
+                                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-0 small fw-bold text-primary" onclick="seekVideo({{ item.timestamp }})" title="Jump to timestamp">
+                                            <i class="bi bi-play-fill"></i> {{ item.formatted_timestamp }}
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if action_items_count > 4 %}
+                        <div class="mt-2 text-center">
+                            <a href="{% url 'videos:action_items' video.pk %}" class="small text-success fw-semibold text-decoration-none">
+                                View all {{ action_items_count }} action items &rarr;
+                            </a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="p-3 bg-light rounded-3 text-center">
+                        <p class="text-muted small mb-2">No action items detected yet.</p>
+                        <form method="POST" action="{% url 'videos:extract_action_items' video.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success btn-sm rounded-pill px-4 fw-bold shadow-sm">
+                                <i class="bi bi-stars me-1"></i> Extract Action Items Now
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- 4. AI Summary Quick Preview Card -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4 border-start border-primary border-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 p-2 me-2">
+                            <i class="bi bi-stars fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0">AI Summary & Smart Notes</h5>
+                            <small class="text-muted">Structured Lecture Notes & Key Takeaways</small>
+                        </div>
+                    </div>
+                    {% if has_summary %}
+                        <a href="{% url 'videos:summary' video.pk %}" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold shadow-sm">
+                            <i class="bi bi-journal-text me-1"></i> View Full Notes
+                        </a>
+                    {% else %}
+                        <form method="POST" action="{% url 'videos:generate_summary' video.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold shadow-sm">
+                                <i class="bi bi-stars me-1"></i> Generate AI Summary
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+
+                <hr class="opacity-25 my-2">
+
+                {% if has_summary %}
+                    <p class="text-dark small mb-2 leading-relaxed">
+                        {{ summary.short_summary }}
+                    </p>
+                    {% if summary.key_points %}
+                        <div class="mt-2">
+                            <strong class="small text-secondary"><i class="bi bi-check2-circle text-success me-1"></i> Top Takeaways:</strong>
+                            <ul class="list-unstyled mb-0 mt-1 small">
+                                {% for pt in summary.key_points|slice:":3" %}
+                                    <li class="d-flex align-items-start mb-1">
+                                        <i class="bi bi-arrow-right-short text-primary me-1 fs-6"></i>
+                                        <span>{{ pt }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    <div class="mt-3">
+                        <a href="{% url 'videos:summary' video.pk %}" class="small text-primary fw-semibold text-decoration-none">
+                            Read detailed section-by-section breakdown &rarr;
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="p-3 bg-light rounded-3 text-center">
+                        <p class="text-muted small mb-2">No summary generated yet for this video.</p>
+                        <form method="POST" action="{% url 'videos:generate_summary' video.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-4 fw-semibold">
+                                <i class="bi bi-stars me-1"></i> Generate AI Summary Now
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- 4. Timestamped Speech Transcript Section -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 p-2 me-2">
+                            <i class="bi bi-file-earmark-text-fill fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0">Full Timestamped Speech Transcript</h5>
+                            <small class="text-muted">Powered by faster-whisper &bull; {{ segment_count }} Segments</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 align-items-center">
+                        {% if has_transcript %}
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="copyTranscript()">
+                                <i class="bi bi-clipboard me-1"></i> Copy All
+                            </button>
+                        {% endif %}
+                        <form method="POST" action="{% url 'videos:transcribe_action' video.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold shadow-sm">
+                                <i class="bi bi-arrow-repeat me-1"></i> {% if has_transcript %}Re-Transcribe{% else %}Transcribe Now{% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <hr class="opacity-25 my-2">
+
+                {% if has_transcript %}
+                    <!-- Search Filter Box -->
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" id="transcriptSearch" class="form-control border-start-0" placeholder="Search spoken words inside transcript..." onkeyup="filterTranscript()">
+                        </div>
+                    </div>
+
+                    <!-- Transcript Segments List -->
+                    <div class="transcript-container rounded-3 border p-2" style="max-height: 480px; overflow-y: auto;">
+                        <div class="list-group list-group-flush" id="transcriptList">
+                            {% for segment in transcript_segments %}
+                                <div class="list-group-item list-group-item-action border-0 rounded-3 mb-2 p-3 transcript-item" data-text="{{ segment.text|lower }}">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-0 small fw-bold text-primary time-jump-btn" onclick="seekVideo({{ segment.start_time }})" title="Jump to this moment in video">
+                                            <i class="bi bi-play-fill"></i> {{ segment.formatted_start_time }} &ndash; {{ segment.formatted_end_time }}
+                                        </button>
+                                        <span class="text-muted small">#{{ forloop.counter }}</span>
+                                    </div>
+                                    <p class="mb-0 text-dark small leading-relaxed">{{ segment.text }}</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Hidden Full Text for Copying -->
+                    <textarea id="fullTranscriptBuffer" style="display: none;">{{ video.full_transcript_text }}</textarea>
+
+                {% elif video.status == 'failed' %}
+                    <!-- Failure State Alert -->
+                    <div class="alert alert-danger border-0 rounded-3 mb-0">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
+                            <div>
+                                <strong>Transcription Error:</strong>
+                                <p class="mb-2 small">{{ video.error_message|default:"Unable to transcribe audio." }}</p>
+                                <form method="POST" action="{% url 'videos:transcribe_action' video.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm rounded-pill px-3">
+                                        <i class="bi bi-arrow-clockwise me-1"></i> Retry Speech-to-Text
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="p-4 bg-light rounded-3 text-center">
+                        <i class="bi bi-mic text-muted fs-1 mb-2 d-block"></i>
+                        <h6 class="fw-bold mb-1">No Transcript Generated Yet</h6>
+                        <p class="text-muted small mb-3">Click below to transcribe speech from this video into timestamped text segments using faster-whisper.</p>
+                        <form method="POST" action="{% url 'videos:transcribe_action' video.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 fw-semibold shadow-sm">
+                                <i class="bi bi-cpu-fill me-1"></i> Start Speech Recognition
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Pipeline Status Roadmap -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                    <h5 class="fw-bold mb-0 d-flex align-items-center">
+                        <i class="bi bi-cpu-fill text-primary me-2"></i> Video Processing Pipeline
+                    </h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge {{ video.status_badge_class }} rounded-pill px-3 py-1">
+                            <i class="bi bi-dot"></i> {{ video.get_status_display }}
+                        </span>
+                        <form method="POST" action="{% url 'videos:process_pipeline' video.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm fw-semibold">
+                                <i class="bi bi-arrow-repeat me-1"></i> {% if video.status == 'failed' %}Retry Pipeline{% else %}Re-Process All{% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                {% if latest_job and latest_job.is_running %}
+                    <!-- Active Progress Bar -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>Stage: <strong>{{ latest_job.get_current_step_display }}</strong></span>
+                            <span>{{ latest_job.progress_percent }}%</span>
+                        </div>
+                        <div class="progress rounded-pill" style="height: 8px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: {{ latest_job.progress_percent }}%;"></div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if video.status == 'failed' or latest_job.is_failed %}
+                    <!-- Failure Alert with Retry -->
+                    <div class="alert alert-danger border-0 rounded-4 p-3 mb-3">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-danger flex-shrink-0"></i>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold small text-danger">Processing Failure Detected</div>
+                                <div class="small text-dark mb-2">{{ video.error_message|default:latest_job.error_message|default:"A step in the video pipeline encountered an error." }}</div>
+                                <form method="POST" action="{% url 'videos:process_pipeline' video.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm rounded-pill px-4 fw-bold shadow-sm">
+                                        <i class="bi bi-arrow-clockwise me-1"></i> Retry Complete Pipeline
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="row g-2 g-md-2 pt-1">
+                    <div class="col-4 col-md-2">
+                        <div class="p-2 border rounded-3 text-center h-100 {% if video.has_audio %}border-success bg-success bg-opacity-10{% else %}bg-light{% endif %}">
+                            <i class="bi bi-soundwave fs-5 {% if video.has_audio %}text-success{% else %}text-secondary{% endif %} mb-1 d-block"></i>
+                            <div class="fw-bold text-truncate" style="font-size: 0.75rem;">1. Audio</div>
+                            <small class="text-muted" style="font-size: 0.68rem;">
+                                {% if video.has_audio %}<strong class="text-success">&check; Done</strong>{% else %}Pending{% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-4 col-md-2">
+                        <div class="p-2 border rounded-3 text-center h-100 {% if has_transcript %}border-success bg-success bg-opacity-10{% else %}bg-light{% endif %}">
+                            <i class="bi bi-mic-fill fs-5 {% if has_transcript %}text-success{% else %}text-secondary{% endif %} mb-1 d-block"></i>
+                            <div class="fw-bold text-truncate" style="font-size: 0.75rem;">2. Whisper</div>
+                            <small class="text-muted" style="font-size: 0.68rem;">
+                                {% if has_transcript %}<strong class="text-success">&check; Done</strong>{% else %}Pending{% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-4 col-md-2">
+                        <div class="p-2 border rounded-3 text-center h-100 {% if has_summary %}border-success bg-success bg-opacity-10{% else %}bg-light{% endif %}">
+                            <i class="bi bi-journal-check fs-5 {% if has_summary %}text-success{% else %}text-secondary{% endif %} mb-1 d-block"></i>
+                            <div class="fw-bold text-truncate" style="font-size: 0.75rem;">3. Summary</div>
+                            <small class="text-muted" style="font-size: 0.68rem;">
+                                {% if has_summary %}<strong class="text-success">&check; Done</strong>{% else %}Pending{% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-4 col-md-2">
+                        <div class="p-2 border rounded-3 text-center h-100 {% if has_moments %}border-success bg-success bg-opacity-10{% else %}bg-light{% endif %}">
+                            <i class="bi bi-pin-angle-fill fs-5 {% if has_moments %}text-success{% else %}text-secondary{% endif %} mb-1 d-block"></i>
+                            <div class="fw-bold text-truncate" style="font-size: 0.75rem;">4. Moments</div>
+                            <small class="text-muted" style="font-size: 0.68rem;">
+                                {% if has_moments %}<strong class="text-success">&check; Done</strong>{% else %}Pending{% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-4 col-md-2">
+                        <div class="p-2 border rounded-3 text-center h-100 {% if has_action_items %}border-success bg-success bg-opacity-10{% else %}bg-light{% endif %}">
+                            <i class="bi bi-check2-square fs-5 {% if has_action_items %}text-success{% else %}text-secondary{% endif %} mb-1 d-block"></i>
+                            <div class="fw-bold text-truncate" style="font-size: 0.75rem;">5. Tasks</div>
+                            <small class="text-muted" style="font-size: 0.68rem;">
+                                {% if has_action_items %}<strong class="text-success">&check; Done</strong>{% else %}Pending{% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-4 col-md-2">
+                        <div class="p-2 border rounded-3 text-center h-100 {% if has_transcript %}border-success bg-success bg-opacity-10{% else %}bg-light{% endif %}">
+                            <i class="bi bi-database-check fs-5 {% if has_transcript %}text-success{% else %}text-secondary{% endif %} mb-1 d-block"></i>
+                            <div class="fw-bold text-truncate" style="font-size: 0.75rem;">6. RAG Vector</div>
+                            <small class="text-muted" style="font-size: 0.68rem;">
+                                {% if has_transcript %}<strong class="text-success">&check; Active</strong>{% else %}Pending{% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Video Metadata & Quick Actions -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+                <h5 class="fw-bold mb-3 d-flex align-items-center">
+                    <i class="bi bi-info-circle-fill text-primary me-2"></i> File Metadata
+                </h5>
+                <hr class="opacity-25 my-2">
+
+                <ul class="list-unstyled mb-0">
+                    <li class="py-2 border-bottom border-light d-flex justify-content-between">
+                        <span class="text-muted small">File Name</span>
+                        <span class="fw-semibold small text-truncate" style="max-width: 180px;" title="{{ video.original_filename }}">
+                            {{ video.original_filename }}
+                        </span>
+                    </li>
+                    <li class="py-2 border-bottom border-light d-flex justify-content-between">
+                        <span class="text-muted small">File Size</span>
+                        <span class="fw-semibold small">{{ video.formatted_file_size }}</span>
+                    </li>
+                    <li class="py-2 border-bottom border-light d-flex justify-content-between">
+                        <span class="text-muted small">Duration</span>
+                        <span class="fw-semibold small">{{ video.formatted_duration }}</span>
+                    </li>
+                    <li class="py-2 border-bottom border-light d-flex justify-content-between">
+                        <span class="text-muted small">Action Items</span>
+                        <span class="badge bg-success-subtle text-dark border small">{{ action_items_count }}</span>
+                    </li>
+                    <li class="py-2 border-bottom border-light d-flex justify-content-between">
+                        <span class="text-muted small">Key Moments</span>
+                        <span class="badge bg-warning-subtle text-dark border small">{{ moments_count }}</span>
+                    </li>
+                    <li class="py-2 border-bottom border-light d-flex justify-content-between">
+                        <span class="text-muted small">Segments</span>
+                        <span class="badge bg-primary-subtle text-primary small">{{ segment_count }}</span>
+                    </li>
+                    <li class="py-2 border-bottom border-light d-flex justify-content-between">
+                        <span class="text-muted small">Language</span>
+                        <span class="fw-semibold small">{{ video.language|upper }}</span>
+                    </li>
+                    <li class="py-2 border-bottom border-light d-flex justify-content-between">
+                        <span class="text-muted small">Uploaded By</span>
+                        <span class="fw-semibold small">{{ video.user.username }}</span>
+                    </li>
+                    <li class="py-2 d-flex justify-content-between">
+                        <span class="text-muted small">Uploaded At</span>
+                        <span class="fw-semibold small">{{ video.created_at|date:"M d, Y H:i" }}</span>
+                    </li>
+                </ul>
+
+                <div class="mt-4 d-grid gap-2">
+                    <a href="{% url 'videos:download_pdf' video.pk %}" class="btn btn-danger rounded-pill btn-sm fw-bold shadow-sm">
+                        <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download Executive PDF Report
+                    </a>
+                    <a href="{% url 'rag:video_chat' video.pk %}" class="btn btn-primary rounded-pill btn-sm fw-bold shadow-sm">
+                        <i class="bi bi-robot me-1"></i> Ask AI Video Chatbot
+                    </a>
+                    <form method="POST" action="{% url 'videos:process_pipeline' video.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-warning text-dark border rounded-pill btn-sm fw-bold w-100 shadow-sm">
+                            <i class="bi bi-arrow-repeat me-1"></i> Re-Run Full AI Pipeline
+                        </button>
+                    </form>
+                    {% if has_summary %}
+                        <a href="{% url 'videos:summary' video.pk %}" class="btn btn-outline-primary rounded-pill btn-sm fw-bold shadow-sm">
+                            <i class="bi bi-journal-text me-1"></i> Open AI Study Notes
+                        </a>
+                    {% endif %}
+                    {% if video.video_file %}
+                        <a href="{{ video.video_file.url }}" download class="btn btn-outline-primary rounded-pill btn-sm fw-semibold">
+                            <i class="bi bi-download me-1"></i> Download Raw Video
+                        </a>
+                    {% endif %}
+
+                    {% if video.has_audio %}
+                        <a href="{{ video.audio_file.url }}" download class="btn btn-outline-success rounded-pill btn-sm fw-semibold">
+                            <i class="bi bi-music-note-beamed me-1"></i> Download Audio (WAV)
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'videos:dashboard' %}" class="btn btn-light rounded-pill btn-sm text-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Inline Interactive Script for Video Jump and Search -->
+<script>
+function seekVideo(seconds) {
+    const video = document.getElementById('videoPlayer');
+    if (video) {
+        video.currentTime = parseFloat(seconds);
+        video.play();
+        video.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function filterTranscript() {
+    const query = document.getElementById('transcriptSearch').value.toLowerCase();
+    const items = document.querySelectorAll('.transcript-item');
+    items.forEach(item => {
+        const text = item.getAttribute('data-text') || '';
+        if (text.includes(query)) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+function copyTranscript() {
+    const buffer = document.getElementById('fullTranscriptBuffer');
+    if (buffer) {
+        navigator.clipboard.writeText(buffer.value).then(() => {
+            alert('Full transcript copied to clipboard!');
+        }).catch(() => {
+            buffer.select();
+            document.execCommand('copy');
+            alert('Full transcript copied to clipboard!');
+        });
+    }
+}
+</script>
+{% endblock %}

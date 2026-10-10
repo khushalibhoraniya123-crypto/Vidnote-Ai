@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}VidNote AI | Intelligent Video Summarization, Notes & RAG Assistant{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section text-white py-5 position-relative overflow-hidden">
+    <div class="container py-5">
+        <div class="row align-items-center justify-content-center text-center">
+            <div class="col-lg-10">
+                <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-50 px-3 py-2 rounded-pill mb-3 fw-semibold">
+                    <i class="bi bi-stars me-1 text-warning"></i> AI-Powered Video Learning Platform
+                </span>
+                <h1 class="display-4 fw-extrabold mb-3 tracking-tight">
+                    Turn Any Lecture or Video into <span class="gradient-text">Structured Knowledge</span>
+                </h1>
+                <p class="lead text-light-emphasis mb-4 mx-auto" style="max-width: 780px;">
+                    Upload educational lectures, meetings, and tutorials to automatically extract transcripts, multi-level AI summaries, important moments, action items, and chat with your video via ChromaDB RAG.
+                </p>
+                <div class="d-flex flex-wrap justify-content-center gap-3 mb-4">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'videos:dashboard' %}" class="btn btn-primary btn-lg px-4 rounded-pill fw-bold shadow-sm">
+                            <i class="bi bi-collection-play me-2"></i>Go to Workspace
+                        </a>
+                        <a href="{% url 'videos:upload' %}" class="btn btn-outline-light btn-lg px-4 rounded-pill fw-bold">
+                            <i class="bi bi-cloud-arrow-up-fill me-2"></i>Upload Video
+                        </a>
+                    {% else %}
+                        <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg px-4 rounded-pill fw-bold shadow-sm">
+                            <i class="bi bi-rocket-takeoff-fill me-2"></i>Get Started Free
+                        </a>
+                        <a href="{% url 'accounts:login' %}" class="btn btn-outline-light btn-lg px-4 rounded-pill fw-bold">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Log In
+                        </a>
+                    {% endif %}
+                </div>
+
+                <!-- Quick Tech Stack Badges -->
+                <div class="d-flex flex-wrap justify-content-center align-items-center gap-2 pt-2 text-white-50 small">
+                    <span class="badge bg-dark border border-secondary border-opacity-25 px-3 py-2 rounded-pill"><i class="bi bi-mic text-info me-1"></i> Faster-Whisper</span>
+                    <span class="badge bg-dark border border-secondary border-opacity-25 px-3 py-2 rounded-pill"><i class="bi bi-cpu text-warning me-1"></i> Gemini / OpenAI LLM</span>
+                    <span class="badge bg-dark border border-secondary border-opacity-25 px-3 py-2 rounded-pill"><i class="bi bi-database text-success me-1"></i> ChromaDB Vector Store</span>
+                    <span class="badge bg-dark border border-secondary border-opacity-25 px-3 py-2 rounded-pill"><i class="bi bi-file-earmark-pdf text-danger me-1"></i> ReportLab Engine</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Core Features / Capabilities Section -->
+<section id="features" class="py-5 bg-white border-top border-bottom">
+    <div class="container py-3">
+        <div class="text-center mb-5">
+            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 mb-2 fw-semibold">PLATFORM CAPABILITIES</span>
+            <h2 class="fw-bold">Everything You Need for Video-Based Learning</h2>
+            <p class="text-muted mx-auto" style="max-width: 600px;">A comprehensive, end-to-end AI pipeline designed for students, educators, and researchers.</p>
+        </div>
+
+        <div class="row g-4">
+            <!-- 1. Whisper Transcription -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-3 feature-card">
+                    <div class="card-body">
+                        <div class="feature-icon mb-3 bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
+                            <i class="bi bi-soundwave fs-3"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Automated Speech-to-Text</h5>
+                        <p class="card-text text-muted small leading-relaxed">
+                            Extract high-precision, timestamped transcriptions using Faster-Whisper with automatic language detection and word boundary alignments.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. AI Summaries & Notes -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-3 feature-card">
+                    <div class="card-body">
+                        <div class="feature-icon mb-3 bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
+                            <i class="bi bi-lightning-charge-fill fs-3"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Multi-Level AI Summaries</h5>
+                        <p class="card-text text-muted small leading-relaxed">
+                            Generate executive TL;DR summaries, key concept takeaways, and comprehensive lecture notes with structured markdown.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Important Moments & Timestamps -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-3 feature-card">
+                    <div class="card-body">
+                        <div class="feature-icon mb-3 bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
+                            <i class="bi bi-pin-angle-fill fs-3"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Important Moments & Markers</h5>
+                        <p class="card-text text-muted small leading-relaxed">
+                            Automatically detect topic transitions and critical highlights. Click any moment to instantly jump the video player to that exact second.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Action Items Extraction -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-3 feature-card">
+                    <div class="card-body">
+                        <div class="feature-icon mb-3 bg-danger bg-opacity-10 text-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
+                            <i class="bi bi-card-checklist fs-3"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Action Items & Deliverables</h5>
+                        <p class="card-text text-muted small leading-relaxed">
+                            Extract assignments, meeting tasks, and deadlines with assigned priorities and interactive pending/completed status toggling.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. RAG Vector Q&A Chatbot -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-3 feature-card">
+                    <div class="card-body">
+                        <div class="feature-icon mb-3 bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
+                            <i class="bi bi-chat-dots-fill fs-3"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">RAG Video Q&A Assistant</h5>
+                        <p class="card-text text-muted small leading-relaxed">
+                            Ask any question about the video. ChromaDB semantic vector search retrieves relevant transcript chunks with clickable timestamp citations.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Executive PDF Reports -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-3 feature-card">
+                    <div class="card-body">
+                        <div class="feature-icon mb-3 bg-secondary bg-opacity-10 text-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
+                            <i class="bi bi-file-earmark-pdf-fill fs-3 text-danger"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">ReportLab PDF Reports</h5>
+                        <p class="card-text text-muted small leading-relaxed">
+                            Generate and download multi-page executive study summaries with formatted tables, action items checklist, and full transcripts.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Flow -->
+<section class="py-5 bg-light">
+    <div class="container py-3">
+        <div class="text-center mb-5">
+            <span class="badge bg-info bg-opacity-10 text-info rounded-pill px-3 py-1 mb-2 fw-semibold">WORKFLOW PIPELINE</span>
+            <h2 class="fw-bold">How VidNote AI Processes Your Videos</h2>
+            <p class="text-muted">A streamlined 4-step intelligent processing lifecycle</p>
+        </div>
+
+        <div class="row g-4 text-center">
+            <div class="col-sm-6 col-lg-3">
+                <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold fs-4" style="width: 52px; height: 52px;">1</div>
+                    <h6 class="fw-bold mb-2">Upload Video</h6>
+                    <p class="text-muted small mb-0">Upload MP4, MKV, or WEBM lecture files to your private user workspace.</p>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+                    <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold fs-4" style="width: 52px; height: 52px;">2</div>
+                    <h6 class="fw-bold mb-2">Speech & NLP Extraction</h6>
+                    <p class="text-muted small mb-0">Whisper extracts timestamped transcript segments and language metadata.</p>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+                    <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold fs-4" style="width: 52px; height: 52px;">3</div>
+                    <h6 class="fw-bold mb-2">AI Insights & Indexing</h6>
+                    <p class="text-muted small mb-0">Summaries, key timestamps, action items, and ChromaDB vector embeddings are built.</p>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card border-0 shadow-sm rounded-4 p-4 h-100 bg-white">
+                    <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold fs-4" style="width: 52px; height: 52px;">4</div>
+                    <h6 class="fw-bold mb-2">Interact & Export</h6>
+                    <p class="text-muted small mb-0">Ask questions via RAG AI chatbot, manage tasks, and export comprehensive PDF reports.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action Banner -->
+<section class="py-5 bg-white border-top">
+    <div class="container py-4">
+        <div class="card border-0 rounded-4 p-4 p-md-5 text-white text-center shadow-lg" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <h2 class="fw-bold mb-3">Ready to transform your video learning experience?</h2>
+                    <p class="text-light-emphasis mb-4">Start organizing your lecture notes, capturing key moments, and asking questions with grounded AI citations today.</p>
+                    <div class="d-flex flex-wrap justify-content-center gap-3">
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'videos:upload' %}" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm">
+                                <i class="bi bi-cloud-arrow-up-fill me-2"></i>Upload Video
+                            </a>
+                            <a href="{% url 'videos:dashboard' %}" class="btn btn-outline-light btn-lg rounded-pill px-4 fw-semibold">
+                                <i class="bi bi-grid me-2"></i>My Dashboard
+                            </a>
+                        {% else %}
+                            <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm">
+                                <i class="bi bi-rocket-takeoff-fill me-2"></i>Register Free
+                            </a>
+                            <a href="{% url 'accounts:login' %}" class="btn btn-outline-light btn-lg rounded-pill px-4 fw-semibold">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Login to Account
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

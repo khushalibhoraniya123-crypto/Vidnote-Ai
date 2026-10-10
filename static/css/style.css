@@ -1,0 +1,173 @@
+/* ==========================================================================
+   VidNote AI — Modern, Professional Styling & Design System
+   Tailored for college demonstration excellence & intuitive UX
+   ========================================================================== */
+
+:root {
+    --bs-font-sans-serif: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --primary-color: #2563eb;
+    --primary-dark: #1d4ed8;
+    --primary-light: #eff6ff;
+    --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #3b82f6 50%, #06b6d4 100%);
+    --accent-gradient: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+    --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    --hero-bg: #0f172a;
+}
+
+body {
+    font-family: var(--bs-font-sans-serif);
+    color: #334155;
+    background-color: #f8fafc;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Navbar */
+.navbar-custom {
+    background-color: #0f172a !important;
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.navbar-brand {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.nav-link {
+    font-weight: 500;
+    font-size: 0.925rem;
+    transition: color 0.15s ease-in-out;
+}
+
+.nav-link:hover {
+    color: #60a5fa !important;
+}
+
+/* Hero Section */
+.hero-section {
+    background: radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.22) 0%, transparent 50%),
+                radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.18) 0%, transparent 50%),
+                var(--hero-bg);
+}
+
+.gradient-text {
+    background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #60a5fa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Cards & Elevate Effects */
+.feature-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    background-color: #ffffff;
+}
+
+.feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--card-shadow-hover) !important;
+}
+
+.moment-card, .action-item-card {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.moment-card:hover, .action-item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Badges */
+.badge-pill-custom {
+    font-weight: 600;
+    padding: 0.45em 0.85em;
+    font-size: 0.775rem;
+}
+
+/* Pulse Animation for Active Status */
+.status-pulse {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #10b981;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+/* Typography Utilities */
+.tracking-wider {
+    letter-spacing: 0.08em;
+}
+
+.tracking-tight {
+    letter-spacing: -0.025em;
+}
+
+.fw-extrabold {
+    font-weight: 800;
+}
+
+.leading-relaxed {
+    line-height: 1.65;
+}
+
+/* Forms & Inputs */
+.form-control:focus, .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.15);
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+.btn-primary:hover {
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+.btn-white {
+    background-color: #ffffff;
+    color: #1e293b;
+}
+
+.btn-white:hover {
+    background-color: #f8fafc;
+    color: #0f172a;
+}

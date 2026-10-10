@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Video | VidNote AI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Breadcrumb Navigation -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'videos:dashboard' %}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Upload Video</li>
+                </ol>
+            </nav>
+
+            <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-3 p-3 me-3 flex-shrink-0">
+                        <i class="bi bi-cloud-arrow-up-fill fs-3"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-1">Upload New Video</h3>
+                        <p class="text-muted small mb-0">Upload a lecture, tutorial, or meeting video for automated AI transcription, summarization, and RAG Q&A</p>
+                    </div>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data" id="videoUploadForm" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger py-2 small mb-4">
+                            {% for error in form.non_field_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Video Title -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold" for="{{ form.title.id_for_label }}">
+                            Video Title <span class="text-danger">*</span>
+                        </label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.title.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text text-muted small">Give a descriptive title (e.g. "Computer Networks: Chapter 4 TCP/IP" or "Sprint Demo Review").</div>
+                    </div>
+
+                    <!-- Video Description -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold" for="{{ form.description.id_for_label }}">
+                            Description & Context <span class="text-muted fw-normal">(optional)</span>
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.description.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text text-muted small">Optional brief overview or speaker context.</div>
+                    </div>
+
+                    <!-- File Upload Box -->
+                    <div class="mb-4 p-4 border border-2 border-dashed rounded-4 bg-light text-center" id="dropZone">
+                        <i class="bi bi-file-earmark-play-fill fs-1 text-primary mb-2 d-block"></i>
+                        <label class="form-label fw-bold mb-1" for="{{ form.video_file.id_for_label }}">
+                            Select Video File <span class="text-danger">*</span>
+                        </label>
+                        <p class="text-muted small mb-3">Supported formats: MP4, MKV, MOV, AVI, WEBM (Max size: 100 MB)</p>
+                        
+                        <div class="col-md-9 mx-auto">
+                            {{ form.video_file }}
+                        </div>
+
+                        <!-- Live File Info Badge (hidden until selected) -->
+                        <div id="fileInfoBadge" class="mt-3 d-none">
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill small">
+                                <i class="bi bi-check-circle-fill me-1"></i> <span id="fileNameDisplay">file.mp4</span> (<span id="fileSizeDisplay">0 MB</span>)
+                            </span>
+                        </div>
+
+                        {% if form.video_file.errors %}
+                            <div class="text-danger small mt-2 fw-semibold">
+                                {% for error in form.video_file.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Loading / Processing Banner (hidden until submit) -->
+                    <div id="uploadingIndicator" class="alert alert-info border-0 rounded-4 p-3 d-none mb-4">
+                        <div class="d-flex align-items-center">
+                            <div class="spinner-border spinner-border-sm text-primary me-3" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <div>
+                                <div class="fw-bold small text-dark">Uploading Video to Server...</div>
+                                <div class="text-muted small">Please wait while your video file is securely transferred and registered.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2">
+                        <a href="{% url 'videos:dashboard' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                            <i class="bi bi-arrow-left me-1"></i> Cancel
+                        </a>
+                        <button type="submit" id="uploadSubmitBtn" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
+                            <i class="bi bi-upload me-2"></i> Upload Video
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Live file selection info & submit spinner handling
+    const fileInput = document.getElementById('{{ form.video_file.id_for_label }}') || document.querySelector('input[type="file"]');
+    const fileInfoBadge = document.getElementById('fileInfoBadge');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const fileSizeDisplay = document.getElementById('fileSizeDisplay');
+    const uploadForm = document.getElementById('videoUploadForm');
+    const uploadSubmitBtn = document.getElementById('uploadSubmitBtn');
+    const uploadingIndicator = document.getElementById('uploadingIndicator');
+
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                const file = this.files[0];
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                if (fileNameDisplay) fileNameDisplay.textContent = file.name;
+                if (fileSizeDisplay) fileSizeDisplay.textContent = sizeMB + ' MB';
+                if (fileInfoBadge) fileInfoBadge.classList.remove('d-none');
+            }
+        });
+    }
+
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function() {
+            if (uploadSubmitBtn) {
+                uploadSubmitBtn.disabled = true;
+                uploadSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
+            }
+            if (uploadingIndicator) {
+                uploadingIndicator.classList.remove('d-none');
+            }
+        });
+    }
+</script>
+{% endblock %}

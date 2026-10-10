@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Login | VidNote AI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4">
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 56px; height: 56px;">
+                            <i class="bi bi-box-arrow-in-right fs-3"></i>
+                        </div>
+                        <h3 class="fw-bold mb-1">Welcome Back</h3>
+                        <p class="text-muted small">Enter your credentials to access your account</p>
+                    </div>
+
+                    <form method="POST" novalidate>
+                        {% csrf_token %}
+                        {% if request.GET.next %}
+                            <input type="hidden" name="next" value="{{ request.GET.next }}">
+                        {% endif %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger py-2 small">
+                                {% for error in form.non_field_errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold" for="{{ form.username.id_for_label }}">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-person text-muted"></i></span>
+                                {{ form.username }}
+                            </div>
+                            {% if form.username.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.username.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-semibold" for="{{ form.password.id_for_label }}">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock text-muted"></i></span>
+                                {{ form.password }}
+                            </div>
+                            {% if form.password.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.password.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Log In
+                            </button>
+                        </div>
+
+                        <div class="text-center text-muted small">
+                            Don't have an account yet? 
+                            <a href="{% url 'accounts:register' %}" class="text-primary fw-semibold text-decoration-none">Register</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
