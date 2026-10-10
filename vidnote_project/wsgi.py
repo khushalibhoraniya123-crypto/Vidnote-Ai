@@ -15,5 +15,14 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vidnote_project.settings')
 application = get_wsgi_application()
 app = application
 
+# Run migrations automatically on Vercel serverless cold start
+if os.getenv('VERCEL'):
+    try:
+        from django.core.management import call_command
+        call_command('migrate', interactive=False, verbosity=0)
+    except Exception as _mig_err:
+        pass
+
+
 
 
