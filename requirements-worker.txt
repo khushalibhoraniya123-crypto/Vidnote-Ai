@@ -1,0 +1,7 @@
+# Optional heavy dependencies for local GPU / dedicated background worker deployments
+-r requirements.txt
+torch>=2.0.0
+faster-whisper>=1.0.0
+sentence-transformers>=3.0.0
+chromadb>=0.5.0
+imageio-ffmpeg>=0.6.0

@@ -20,16 +20,29 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from .env if present
 load_dotenv(BASE_DIR / '.env')
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
+IS_VERCEL = os.getenv('VERCEL', '0') == '1' or bool(os.getenv('VERCEL_URL'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-hek&uz$l2!#!xy5t3ggp6e5t!@47oyvy=(lo6@(*(-)+k+8z=t')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = os.getenv('DEBUG', 'True' if not IS_VERCEL else 'False') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+if IS_VERCEL:
+    ALLOWED_HOSTS = ['*']
+else:
+    raw_hosts = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+    ALLOWED_HOSTS = [h.strip() for h in raw_hosts if h.strip()]
+    if '.vercel.app' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append('.vercel.app')
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.vercel.app',
+    'https://*.now.sh',
+]
+extra_csrf = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+if extra_csrf:
+    CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in extra_csrf.split(',') if origin.strip()])
 
 
 # Application definition
@@ -40,6 +53,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
     # Local Apps
     'core',
@@ -52,6 +66,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -82,12 +97,19 @@ WSGI_APPLICATION = 'vidnote_project.wsgi.application'
 
 
 # Database
-# https://docs.djangoproject.com/en/6.1/ref/settings/#databases
+if IS_VERCEL:
+    DB_PATH = Path('/tmp') / 'db.sqlite3'
+    MEDIA_ROOT = Path('/tmp') / 'media'
+    CHROMA_PERSIST_DIRECTORY = str(Path('/tmp') / 'media' / 'chroma_db')
+else:
+    DB_PATH = BASE_DIR / 'db.sqlite3'
+    MEDIA_ROOT = BASE_DIR / 'media'
+    CHROMA_PERSIST_DIRECTORY = os.path.join(MEDIA_ROOT, 'chroma_db')
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DB_PATH,
     }
 }
 
@@ -129,10 +151,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files (Uploaded files)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -171,7 +193,7 @@ LLM_MODEL_NAME = os.getenv('LLM_MODEL_NAME', '').strip()
 # RAG & Semantic Vector Search Configuration
 RAG_EMBEDDING_MODEL = os.getenv('RAG_EMBEDDING_MODEL', 'all-MiniLM-L6-v2')
 RAG_VECTOR_STORE = os.getenv('RAG_VECTOR_STORE', 'chromadb').lower()  # 'chromadb' or 'faiss'
-CHROMA_PERSIST_DIRECTORY = os.path.join(MEDIA_ROOT, 'chroma_db')
+
 
 
 

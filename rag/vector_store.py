@@ -21,9 +21,76 @@ class VectorStoreError(Exception):
     pass
 
 
+import numpy as np
+
+# In-memory numpy vector store fallback for lightweight serverless environments
+class InMemoryVectorCollection:
+    def __init__(self, name: str = COLLECTION_NAME):
+        self.name = name
+        self.records = []  # List of dicts with 'id', 'embedding', 'document', 'metadata'
+
+    def delete(self, where: Optional[Dict[str, Any]] = None):
+        if not where:
+            self.records = []
+            return
+        v_id = where.get("video_id")
+        if v_id is not None:
+            self.records = [r for r in self.records if r['metadata'].get('video_id') != int(v_id)]
+
+    def add(self, ids: List[str], embeddings: List[List[float]], documents: List[str], metadatas: List[Dict[str, Any]]):
+        for i in range(len(ids)):
+            self.records.append({
+                'id': ids[i],
+                'embedding': np.array(embeddings[i], dtype=np.float32),
+                'document': documents[i],
+                'metadata': metadatas[i]
+            })
+
+    def query(self, query_embeddings: List[List[float]], n_results: int = 5, where: Optional[Dict[str, Any]] = None, include: Optional[List[str]] = None) -> Dict[str, Any]:
+        if not self.records or not query_embeddings:
+            return {"ids": [[]], "documents": [[]], "metadatas": [[]], "distances": [[]]}
+
+        q_vec = np.array(query_embeddings[0], dtype=np.float32)
+        q_norm = np.linalg.norm(q_vec)
+        if q_norm == 0:
+            q_norm = 1.0
+
+        v_filter = where.get("video_id") if where else None
+
+        candidates = []
+        for r in self.records:
+            if v_filter is not None and r['metadata'].get('video_id') != int(v_filter):
+                continue
+            r_vec = r['embedding']
+            r_norm = np.linalg.norm(r_vec)
+            if r_norm == 0:
+                r_norm = 1.0
+            # Cosine similarity -> cosine distance (1 - cos_sim)
+            sim = float(np.dot(q_vec, r_vec) / (q_norm * r_norm))
+            dist = max(0.0, min(2.0, 1.0 - sim))
+            candidates.append((dist, r))
+
+        candidates.sort(key=lambda x: x[0])
+        top_candidates = candidates[:n_results]
+
+        ids = [c[1]['id'] for c in top_candidates]
+        docs = [c[1]['document'] for c in top_candidates]
+        metas = [c[1]['metadata'] for c in top_candidates]
+        distances = [c[0] for c in top_candidates]
+
+        return {
+            "ids": [ids],
+            "documents": [docs],
+            "metadatas": [metas],
+            "distances": [distances]
+        }
+
+_IN_MEMORY_COLLECTION = InMemoryVectorCollection()
+
+
 def get_chroma_client():
     """
-    Initialize and return ChromaDB Persistent Client.
+    Initialize and return ChromaDB Persistent Client, or None if unavailable.
     """
     global _CHROMA_CLIENT
     if _CHROMA_CLIENT is not None:
@@ -33,7 +100,10 @@ def get_chroma_client():
     if not persist_dir:
         persist_dir = os.path.join(settings.BASE_DIR, 'media', 'chroma_db')
     
-    os.makedirs(persist_dir, exist_ok=True)
+    try:
+        os.makedirs(persist_dir, exist_ok=True)
+    except Exception:
+        pass
 
     try:
         import chromadb
@@ -44,36 +114,37 @@ def get_chroma_client():
         )
         return _CHROMA_CLIENT
     except Exception as e:
-        logger.warning(f"Could not initialize persistent ChromaDB client ({str(e)}). Using ephemeral client.")
+        logger.info(f"Persistent ChromaDB client unavailable ({str(e)}). Testing ephemeral client...")
         try:
             import chromadb
             _CHROMA_CLIENT = chromadb.EphemeralClient()
             return _CHROMA_CLIENT
-        except Exception as e2:
-            logger.error(f"Failed to create ephemeral Chroma client: {str(e2)}")
+        except Exception:
             return None
 
 
 def get_or_create_collection():
     """
-    Get or create the global ChromaDB collection for transcript chunks.
+    Get or create vector collection (ChromaDB or high-performance NumPy in-memory collection).
     """
     global _CHROMA_COLLECTION
     if _CHROMA_COLLECTION is not None:
         return _CHROMA_COLLECTION
 
     client = get_chroma_client()
-    if client is None:
-        raise VectorStoreError("ChromaDB vector database client is unavailable.")
+    if client is not None:
+        try:
+            _CHROMA_COLLECTION = client.get_or_create_collection(
+                name=COLLECTION_NAME,
+                metadata={"description": "VidNote AI video transcript segment embeddings", "hnsw:space": "cosine"}
+            )
+            return _CHROMA_COLLECTION
+        except Exception as e:
+            logger.warning(f"Chroma collection access error ({str(e)}). Using NumPy vector fallback.")
 
-    try:
-        _CHROMA_COLLECTION = client.get_or_create_collection(
-            name=COLLECTION_NAME,
-            metadata={"description": "VidNote AI video transcript segment embeddings", "hnsw:space": "cosine"}
-        )
-        return _CHROMA_COLLECTION
-    except Exception as e:
-        raise VectorStoreError(f"Failed to access ChromaDB collection '{COLLECTION_NAME}': {str(e)}")
+    _CHROMA_COLLECTION = _IN_MEMORY_COLLECTION
+    return _CHROMA_COLLECTION
+
 
 
 def delete_video_chunks(video_id: int) -> int:

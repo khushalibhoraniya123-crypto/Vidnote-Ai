@@ -8,6 +8,7 @@ import os
 import math
 import logging
 import hashlib
+from typing import Optional, List
 import numpy as np
 from django.conf import settings
 
@@ -66,9 +67,33 @@ def generate_fallback_embedding(text: str, dim: int = 384) -> list[float]:
     return vec.tolist()
 
 
+def generate_openai_embeddings(texts: list[str]) -> Optional[list[list[float]]]:
+    """
+    Generate embeddings using OpenAI API (text-embedding-3-small) for serverless operation.
+    """
+    api_key = getattr(settings, 'OPENAI_API_KEY', '') or os.getenv('OPENAI_API_KEY', '')
+    if not api_key or 'your_' in api_key:
+        return None
+
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+        response = client.embeddings.create(
+            input=texts,
+            model="text-embedding-3-small"
+        )
+        return [item.embedding for item in response.data]
+    except Exception as e:
+        logger.warning(f"OpenAI embedding generation failed ({str(e)}). Using local/fallback vectorizer.")
+        return None
+
+
 def generate_embeddings(texts: list[str]) -> list[list[float]]:
     """
     Generate dense vector embeddings for a list of strings.
+    1. Tries OpenAI Embeddings API (fast, cloud, zero serverless bundle size).
+    2. Tries local SentenceTransformer if installed.
+    3. Falls back to deterministic mathematical hashing vectors.
     """
     if not texts:
         return []
@@ -76,6 +101,12 @@ def generate_embeddings(texts: list[str]) -> list[list[float]]:
     # Filter/clean strings
     cleaned_texts = [str(t or '').strip() for t in texts]
 
+    # 1. Cloud OpenAI API
+    cloud_embeddings = generate_openai_embeddings(cleaned_texts)
+    if cloud_embeddings is not None and len(cloud_embeddings) == len(cleaned_texts):
+        return cloud_embeddings
+
+    # 2. Local SentenceTransformer if available
     model = get_embedding_model()
     if model is not None:
         try:
@@ -84,7 +115,7 @@ def generate_embeddings(texts: list[str]) -> list[list[float]]:
         except Exception as e:
             logger.warning(f"SentenceTransformer encoding failed: {str(e)}. Falling back to deterministic vectors.")
 
-    # Fallback path
+    # 3. Fallback mathematical vectorizer
     return [generate_fallback_embedding(t) for t in cleaned_texts]
 
 
@@ -96,3 +127,4 @@ def generate_embedding(text: str) -> list[float]:
     if res:
         return res[0]
     return [0.0] * 384
+

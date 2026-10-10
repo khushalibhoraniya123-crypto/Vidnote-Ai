@@ -1,0 +1,41 @@
+# Virtual environments
+.env
+.env.local
+*.env
+venv/
+env/
+ENV/
+.venv/
+
+# Python cache & build
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local media, test data, and databases
+media/
+videos/test_*
+test_*.*
+*.mp4
+*.wav
+*.avi
+*.mov
+db.sqlite3
+db.sqlite3-journal
+chroma_db/
+
+# Git & IDE
+.git/
+.github/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
