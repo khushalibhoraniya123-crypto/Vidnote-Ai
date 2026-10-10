@@ -55,7 +55,6 @@ INSTALLED_APPS = [
     'accounts',
     'videos',
     'rag',
-    'reports',
 ]
 
 

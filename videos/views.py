@@ -38,7 +38,7 @@ from .services.pipeline import (
     retry_failed_pipeline,
     PipelineError
 )
-from reports.pdf import generate_video_pdf_report, PDFGenerationError
+
 
 @login_required
 def dashboard_view(request):
@@ -487,15 +487,13 @@ def download_pdf_report_view(request, pk):
     include_transcript = request.GET.get('transcript', '1') in ('1', 'true', 'yes')
 
     try:
+        from reports.pdf import generate_video_pdf_report, PDFGenerationError
         pdf_buffer = generate_video_pdf_report(video, include_transcript=include_transcript)
         safe_filename = slugify(video.title or f"video_{video.pk}")[:50] or f"video_{video.pk}"
         response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="VidNote_Report_{safe_filename}.pdf"'
         return response
-    except PDFGenerationError as e:
-        messages.error(request, f"Could not generate PDF report: {str(e)}")
-        return redirect('videos:detail', pk=video.pk)
     except Exception as e:
-        messages.error(request, f"Unexpected error during PDF creation: {str(e)}")
+        messages.error(request, f"Could not generate PDF report: {str(e)}")
         return redirect('videos:detail', pk=video.pk)
 
