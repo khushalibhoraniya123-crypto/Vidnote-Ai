@@ -1,12 +1,15 @@
 {
-  "rewrites": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/ping",
-      "destination": "/api/ping.py"
-    },
+      "src": "vidnote_project/wsgi.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/api/index.py"
+      "src": "/(.*)",
+      "dest": "vidnote_project/wsgi.py"
     }
   ]
 }
