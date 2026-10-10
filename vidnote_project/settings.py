@@ -26,15 +26,10 @@ IS_VERCEL = os.getenv('VERCEL', '0') == '1' or bool(os.getenv('VERCEL_URL'))
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-hek&uz$l2!#!xy5t3ggp6e5t!@47oyvy=(lo6@(*(-)+k+8z=t')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True' if not IS_VERCEL else 'False') == 'True'
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-if IS_VERCEL:
-    ALLOWED_HOSTS = ['*']
-else:
-    raw_hosts = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
-    ALLOWED_HOSTS = [h.strip() for h in raw_hosts if h.strip()]
-    if '.vercel.app' not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append('.vercel.app')
+ALLOWED_HOSTS = ['*']
+
 
 CSRF_TRUSTED_ORIGINS = [
     'https://*.vercel.app',
